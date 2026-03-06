@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 242, 0.98), rgba(244, 239, 230, 0.96)),
+    radial-gradient(circle at top left, rgba(197, 107, 55, 0.14), transparent 28%),
+    radial-gradient(circle at right 18%, rgba(36, 74, 95, 0.1), transparent 22%);
+  color: #111315;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+a,
+button,
+input,
+select,
+textarea {
+  transition:
+    color 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+
+::selection {
+  background: rgba(197, 107, 55, 0.2);
+}
+
+@layer components {
+  .container-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-space {
+    @apply py-16 sm:py-20 lg:py-24;
+  }
+
+  .glass-panel {
+    @apply rounded-[2rem] border border-black/10 bg-white/70 shadow-panel backdrop-blur;
+  }
+
+  .ring-focus {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay focus-visible:ring-offset-2 focus-visible:ring-offset-canvas;
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+}

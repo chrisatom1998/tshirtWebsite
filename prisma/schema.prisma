@@ -1,0 +1,146 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+}
+
+enum OrderStatus {
+  PAID
+  FULFILLED
+  CANCELLED
+  REFUNDED
+}
+
+enum CheckoutStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+  FAILED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  role         Role     @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Product {
+  id             String           @id @default(cuid())
+  title          String
+  slug           String           @unique
+  description    String
+  price          Int
+  featured       Boolean          @default(false)
+  isActive       Boolean          @default(true)
+  inventoryCount Int              @default(0)
+  sizes          String[]
+  colors         String[]
+  images         ProductImage[]
+  variants       ProductVariant[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([featured, isActive])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([productId, position])
+}
+
+model ProductVariant {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sku       String?  @unique
+  size      String
+  color     String   @default("")
+  price     Int
+  inventory Int      @default(0)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, size, color])
+  @@index([productId, sortOrder])
+}
+
+model Checkout {
+  id              String         @id @default(cuid())
+  stripeSessionId String?        @unique
+  status          CheckoutStatus @default(PENDING)
+  email           String?
+  amountSubtotal  Int
+  amountTotal     Int?
+  currency        String         @default("usd")
+  reservedUntil   DateTime
+  customerDetails Json?
+  cartSnapshot    Json
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  order           Order?
+
+  @@index([status, reservedUntil])
+}
+
+model Order {
+  id                      String      @id @default(cuid())
+  orderNumber             String      @unique
+  checkoutId              String      @unique
+  checkout                Checkout    @relation(fields: [checkoutId], references: [id], onDelete: Restrict)
+  stripeCheckoutSessionId String      @unique
+  stripePaymentIntentId   String?     @unique
+  email                   String
+  customerName            String?
+  currency                String      @default("usd")
+  status                  OrderStatus @default(PAID)
+  subtotal                Int
+  shippingAmount          Int         @default(0)
+  taxAmount               Int         @default(0)
+  total                   Int
+  shippingAddress         Json?
+  items                   OrderItem[]
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  @@index([createdAt])
+}
+
+model OrderItem {
+  id          String   @id @default(cuid())
+  orderId     String
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  variantId   String?
+  title       String
+  slug        String
+  imageUrl    String?
+  sku         String?
+  size        String
+  color       String   @default("")
+  unitAmount  Int
+  quantity    Int
+  totalAmount Int
+  createdAt   DateTime @default(now())
+
+  @@index([orderId])
+}
