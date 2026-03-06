@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { ActionState } from "@/lib/types";
-import { formatPriceInput, parsePriceInput, slugify, uniqueStrings } from "@/lib/utils";
+import { parsePriceInput, slugify, uniqueStrings } from "@/lib/utils";
 import { productFormSchema } from "@/lib/validators";
 
 function parseJsonField(value: FormDataEntryValue | null) {

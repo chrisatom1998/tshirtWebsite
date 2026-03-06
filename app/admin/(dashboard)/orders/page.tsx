@@ -52,7 +52,7 @@ export default async function AdminOrdersPage() {
                     <div>
                       <p className="font-semibold text-ink">{item.title}</p>
                       <p>
-                        {item.size}{item.color ? ` � ${item.color}` : ""} � Qty {item.quantity}
+                        {item.size}{item.color ? ` Â· ${item.color}` : ""} Â· Qty {item.quantity}
                       </p>
                     </div>
                     <p className="font-semibold text-ink">{formatCurrency(item.totalAmount)}</p>

@@ -57,7 +57,7 @@ export function CartDrawer() {
                       {item.title}
                     </Link>
                     <p className="text-sm text-black/55">
-                      {item.size}{item.color ? ` � ${item.color}` : ""}
+                      {item.size}{item.color ? ` Â· ${item.color}` : ""}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-ink">{formatCurrency(item.price)}</p>
                   </div>

@@ -2,30 +2,30 @@ import { Prisma } from "@prisma/client";
 
 import { db } from "@/lib/db";
 
-export const storefrontProductInclude = {
+export const storefrontProductInclude = Prisma.validator<Prisma.ProductInclude>()({
   images: {
     orderBy: {
-      position: "asc" as const,
+      position: "asc",
     },
   },
   variants: {
     where: {
       isActive: true,
     },
-    orderBy: [{ sortOrder: "asc" as const }, { size: "asc" as const }],
+    orderBy: [{ sortOrder: "asc" }, { size: "asc" }],
   },
-} satisfies Prisma.ProductInclude;
+});
 
-export const adminProductInclude = {
+export const adminProductInclude = Prisma.validator<Prisma.ProductInclude>()({
   images: {
     orderBy: {
-      position: "asc" as const,
+      position: "asc",
     },
   },
   variants: {
-    orderBy: [{ sortOrder: "asc" as const }, { size: "asc" as const }],
+    orderBy: [{ sortOrder: "asc" }, { size: "asc" }],
   },
-} satisfies Prisma.ProductInclude;
+});
 
 export type StorefrontProduct = Prisma.ProductGetPayload<{
   include: typeof storefrontProductInclude;
@@ -35,7 +35,7 @@ export type AdminProduct = Prisma.ProductGetPayload<{
   include: typeof adminProductInclude;
 }>;
 
-export async function getFeaturedProducts(limit = 3) {
+export async function getFeaturedProducts(limit = 3): Promise<StorefrontProduct[]> {
   return db.product.findMany({
     where: {
       isActive: true,
@@ -52,7 +52,7 @@ export async function getStorefrontProducts(filters: {
   size?: string;
   color?: string;
   featured?: string;
-}) {
+}): Promise<StorefrontProduct[]> {
   const { search, size, color, featured } = filters;
 
   return db.product.findMany({
@@ -75,7 +75,7 @@ export async function getStorefrontProducts(filters: {
   });
 }
 
-export async function getStorefrontFilterOptions() {
+export async function getStorefrontFilterOptions(): Promise<{ sizes: string[]; colors: string[] }> {
   const products = await db.product.findMany({
     where: { isActive: true },
     select: { sizes: true, colors: true },
@@ -87,21 +87,21 @@ export async function getStorefrontFilterOptions() {
   };
 }
 
-export async function getProductBySlug(slug: string) {
+export async function getProductBySlug(slug: string): Promise<StorefrontProduct | null> {
   return db.product.findUnique({
     where: { slug },
     include: storefrontProductInclude,
   });
 }
 
-export async function getProductById(id: string) {
+export async function getProductById(id: string): Promise<AdminProduct | null> {
   return db.product.findUnique({
     where: { id },
     include: adminProductInclude,
   });
 }
 
-export async function getAdminProducts() {
+export async function getAdminProducts(): Promise<AdminProduct[]> {
   return db.product.findMany({
     include: adminProductInclude,
     orderBy: { updatedAt: "desc" },

@@ -62,11 +62,11 @@ export default async function ProductDetailPage({
             <div className="grid gap-4 text-sm text-black/65 sm:grid-cols-3">
               <div className="glass-panel p-4">
                 <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Sizes</p>
-                <p className="mt-2">{product.sizes.join(" � ")}</p>
+                <p className="mt-2">{product.sizes.join(" Â· ")}</p>
               </div>
               <div className="glass-panel p-4">
                 <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Colors</p>
-                <p className="mt-2">{product.colors.join(" � ")}</p>
+                <p className="mt-2">{product.colors.join(" Â· ")}</p>
               </div>
               <div className="glass-panel p-4">
                 <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Inventory</p>

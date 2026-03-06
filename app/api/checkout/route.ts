@@ -64,7 +64,7 @@ export async function POST(request: Request) {
             unit_amount: item.unitAmount,
             product_data: {
               name: item.title,
-              description: [item.size, item.color].filter(Boolean).join(" � "),
+              description: [item.size, item.color].filter(Boolean).join(" Â· "),
               images: [absoluteUrl(item.imageUrl, origin)],
             },
           },

@@ -16,7 +16,7 @@ export function CartPage() {
     return (
       <EmptyState
         title="Your cart is empty"
-        description="Browse the latest drop, add a few sizes, and come back here when you�re ready to check out."
+        description="Browse the latest drop, add a few sizes, and come back here when youâ€™re ready to check out."
         actionLabel="Browse products"
         actionHref="/products"
       />
@@ -36,7 +36,7 @@ export function CartPage() {
                     {item.title}
                   </Link>
                   <p className="mt-2 text-sm text-black/65">
-                    {item.size}{item.color ? ` � ${item.color}` : ""}
+                    {item.size}{item.color ? ` Â· ${item.color}` : ""}
                   </p>
                 </div>
                 <p className="text-lg font-semibold text-ink">{formatCurrency(item.price * item.quantity)}</p>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { useCart } from "@/components/store/cart-provider";
 import { ButtonLink } from "@/components/ui/button";
@@ -31,12 +31,14 @@ type OrderResponse = {
 
 export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
   const { clearCart } = useCart();
-  const clearCartAfterSuccess = useEffectEvent(() => {
-    clearCart();
-  });
+  const clearCartRef = useRef(clearCart);
   const [state, setState] = useState<
     { status: "loading" } | { status: "ready"; order: NonNullable<OrderResponse["order"]> } | { status: "error"; message: string }
   >({ status: "loading" });
+
+  useEffect(() => {
+    clearCartRef.current = clearCart;
+  }, [clearCart]);
 
   useEffect(() => {
     if (!sessionId) {
@@ -48,28 +50,35 @@ export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
     let timer: ReturnType<typeof setTimeout> | null = null;
 
     const poll = async () => {
-      const response = await fetch(`/api/orders/lookup?sessionId=${sessionId}`, { cache: "no-store" });
-      const payload = (await response.json().catch(() => null)) as OrderResponse | null;
+      try {
+        const response = await fetch(`/api/orders/lookup?sessionId=${sessionId}`, { cache: "no-store" });
+        const payload = (await response.json().catch(() => null)) as OrderResponse | null;
 
-      if (cancelled) {
-        return;
-      }
+        if (cancelled) {
+          return;
+        }
 
-      if (response.status === 202) {
-        timer = setTimeout(poll, 1500);
-        return;
-      }
+        if (response.status === 202) {
+          timer = setTimeout(poll, 1500);
+          return;
+        }
 
-      if (!response.ok || !payload?.order) {
+        if (!response.ok || !payload?.order) {
+          setState({
+            status: "error",
+            message: payload?.message || "We could not confirm your order yet. Refresh in a moment.",
+          });
+          return;
+        }
+
+        clearCartRef.current();
+        setState({ status: "ready", order: payload.order });
+      } catch {
         setState({
           status: "error",
-          message: payload?.message || "We could not confirm your order yet. Refresh in a moment.",
+          message: "We could not confirm your order yet. Refresh in a moment.",
         });
-        return;
       }
-
-      clearCartAfterSuccess();
-      setState({ status: "ready", order: payload.order });
     };
 
     void poll();
@@ -80,13 +89,13 @@ export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
         clearTimeout(timer);
       }
     };
-  }, [clearCartAfterSuccess, sessionId]);
+  }, [sessionId]);
 
   if (state.status === "loading") {
     return (
       <div className="glass-panel space-y-4 p-8">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/45">Order processing</p>
-        <h1 className="font-[family-name:var(--font-heading)] text-4xl font-semibold text-ink">We’re confirming your payment</h1>
+        <h1 className="font-[family-name:var(--font-heading)] text-4xl font-semibold text-ink">Weâ€™re confirming your payment</h1>
         <p className="max-w-2xl text-base leading-8 text-black/70">
           Stripe has redirected you back successfully. The order record appears here as soon as the webhook is processed.
         </p>
@@ -128,7 +137,7 @@ export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
               <div className="space-y-2">
                 <p className="font-semibold text-ink">{item.title}</p>
                 <p className="text-sm text-black/65">
-                  {item.size}{item.color ? ` · ${item.color}` : ""} · Qty {item.quantity}
+                  {item.size}{item.color ? ` Â· ${item.color}` : ""} Â· Qty {item.quantity}
                 </p>
                 <p className="text-sm font-semibold text-ink">{formatCurrency(item.totalAmount)}</p>
               </div>

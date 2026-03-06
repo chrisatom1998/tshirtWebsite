@@ -34,7 +34,7 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
         </div>
         <div className="mt-auto flex items-center justify-between gap-3">
           <p className="text-sm uppercase tracking-[0.2em] text-black/45">
-            {product.colors.slice(0, 2).join(" � ") || "Core colors"}
+            {product.colors.slice(0, 2).join(" Â· ") || "Core colors"}
           </p>
           <p className="text-lg font-semibold text-ink">{formatCurrency(minVariantPrice)}</p>
         </div>

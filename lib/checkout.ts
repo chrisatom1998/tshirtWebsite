@@ -215,8 +215,8 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id || null;
-    const shippingAddress = session.shipping_details?.address
-      ? (session.shipping_details.address as Prisma.InputJsonValue)
+    const shippingAddress = session.customer_details?.address
+      ? (session.customer_details.address as Prisma.InputJsonValue)
       : undefined;
 
     const order = await tx.order.create({
@@ -226,7 +226,7 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         stripeCheckoutSessionId: session.id,
         stripePaymentIntentId: paymentIntentId,
         email,
-        customerName: session.customer_details?.name || session.shipping_details?.name || null,
+        customerName: session.customer_details?.name || null,
         currency: checkout.currency,
         subtotal: checkout.amountSubtotal,
         shippingAmount: session.total_details?.amount_shipping ?? STANDARD_SHIPPING_RATE,
@@ -261,9 +261,9 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         amountTotal: session.amount_total ?? checkout.amountSubtotal,
         customerDetails: {
           email,
-          name: session.customer_details?.name || session.shipping_details?.name || null,
+          name: session.customer_details?.name || null,
           phone: session.customer_details?.phone || null,
-          shipping: session.shipping_details || null,
+          shippingAddress: session.customer_details?.address || null,
         },
       },
     });
@@ -316,3 +316,4 @@ export function getShippingOptions(): Stripe.Checkout.SessionCreateParams.Shippi
     },
   ];
 }
+
