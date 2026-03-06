@@ -160,36 +160,3 @@ export async function deleteProductAction(formData: FormData) {
     revalidatePath(`/products/${slug}`);
   }
 }
-
-export async function duplicateProductValues(productId: string) {
-  await requireAdmin();
-  const product = await db.product.findUnique({
-    where: { id: productId },
-    include: {
-      images: { orderBy: { position: "asc" } },
-      variants: { orderBy: [{ sortOrder: "asc" }, { size: "asc" }] },
-    },
-  });
-
-  if (!product) {
-    redirect("/admin/products");
-  }
-
-  return {
-    id: product.id,
-    title: product.title,
-    slug: product.slug,
-    description: product.description,
-    price: formatPriceInput(product.price),
-    featured: product.featured,
-    isActive: product.isActive,
-    images: product.images.map((image) => ({ url: image.url, alt: image.alt })),
-    variants: product.variants.map((variant) => ({
-      size: variant.size,
-      color: variant.color,
-      price: Number(formatPriceInput(variant.price)),
-      inventory: variant.inventory,
-      sku: variant.sku || "",
-    })),
-  };
-}

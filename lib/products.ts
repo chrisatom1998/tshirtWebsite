@@ -35,6 +35,29 @@ export type AdminProduct = Prisma.ProductGetPayload<{
   include: typeof adminProductInclude;
 }>;
 
+export type AdminOrder = Prisma.OrderGetPayload<{
+  include: {
+    items: true;
+  };
+}>;
+
+export type DashboardLowStockProduct = Prisma.ProductGetPayload<{
+  select: {
+    id: true;
+    title: true;
+    slug: true;
+    inventoryCount: true;
+  };
+}>;
+
+export type AdminDashboardData = {
+  productCount: number;
+  orderCount: number;
+  revenue: number;
+  lowStockProducts: DashboardLowStockProduct[];
+  recentOrders: AdminOrder[];
+};
+
 export async function getFeaturedProducts(limit = 3): Promise<StorefrontProduct[]> {
   return db.product.findMany({
     where: {
@@ -108,7 +131,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
   });
 }
 
-export async function getAdminOrders(limit = 50) {
+export async function getAdminOrders(limit = 50): Promise<AdminOrder[]> {
   return db.order.findMany({
     include: {
       items: true,
@@ -118,7 +141,7 @@ export async function getAdminOrders(limit = 50) {
   });
 }
 
-export async function getAdminDashboardData() {
+export async function getAdminDashboardData(): Promise<AdminDashboardData> {
   const [productCount, orderCount, revenueAggregate, lowStockProducts, recentOrders] = await Promise.all([
     db.product.count(),
     db.order.count(),
@@ -129,6 +152,12 @@ export async function getAdminDashboardData() {
         inventoryCount: {
           lte: 12,
         },
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        inventoryCount: true,
       },
       orderBy: { inventoryCount: "asc" },
       take: 5,

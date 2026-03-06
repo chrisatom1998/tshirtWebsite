@@ -32,7 +32,8 @@ export default async function AdminOrdersPage() {
                   <p className="text-sm font-semibold text-ink">{formatCurrency(order.total)}</p>
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-3 text-sm text-black/65">
+
+              <div className="grid gap-4 text-sm text-black/65 md:grid-cols-3">
                 <div>
                   <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Created</p>
                   <p className="mt-2">{new Date(order.createdAt).toLocaleString()}</p>
@@ -46,14 +47,16 @@ export default async function AdminOrdersPage() {
                   <p className="mt-2">{formatCurrency(order.taxAmount)}</p>
                 </div>
               </div>
+
               <div className="space-y-3">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-black/10 bg-white/70 p-4 text-sm text-black/65">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between gap-4 rounded-[1.25rem] border border-black/10 bg-white/70 p-4 text-sm text-black/65"
+                  >
                     <div>
                       <p className="font-semibold text-ink">{item.title}</p>
-                      <p>
-                        {item.size}{item.color ? ` Â· ${item.color}` : ""} Â· Qty {item.quantity}
-                      </p>
+                      <p>{[item.size, item.color, `Qty ${item.quantity}`].filter(Boolean).join(" / ")}</p>
                     </div>
                     <p className="font-semibold text-ink">{formatCurrency(item.totalAmount)}</p>
                   </div>
