@@ -1,0 +1,9 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" rx="48" fill="#14171A"/>
+  <rect x="80" y="80" width="1040" height="1340" rx="36" fill="#111315" stroke="#F4EFE6" stroke-opacity="0.08" stroke-width="8"/>
+  <path d="M414 330L508 238H692L786 330L920 392L856 556L764 520V1102H436V520L344 556L280 392L414 330Z" fill="#0D0F11" stroke="#F4EFE6" stroke-opacity="0.28" stroke-width="10"/>
+  <rect x="480" y="490" width="240" height="120" rx="20" fill="#C56B37" fill-opacity="0.12"/>
+  <text x="600" y="555" text-anchor="middle" fill="#F4EFE6" font-family="Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="10">A.H.</text>
+  <text x="600" y="1265" text-anchor="middle" fill="#F4EFE6" font-family="Arial, sans-serif" font-size="80" font-weight="700" letter-spacing="16">AFTER HOURS</text>
+  <text x="600" y="1338" text-anchor="middle" fill="#C56B37" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="8">MIDNIGHT ROUTE CLUB</text>
+</svg>

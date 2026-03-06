@@ -30,7 +30,7 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="space-y-2">
           <h3 className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-ink">{product.title}</h3>
-          <p className="line-clamp-2 text-sm leading-7 text-black/65">{product.description}</p>
+          <p className="text-sm leading-7 text-black/65">{product.description}</p>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3">
           <p className="text-sm uppercase tracking-[0.2em] text-black/45">

@@ -1,0 +1,8 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" rx="48" fill="#E7E1D4"/>
+  <rect x="80" y="80" width="1040" height="1340" rx="36" fill="#F7F1E8" stroke="#111315" stroke-opacity="0.08" stroke-width="8"/>
+  <path d="M414 330L508 238H692L786 330L920 392L856 556L764 520V1102H436V520L344 556L280 392L414 330Z" fill="#F4EFE6" stroke="#41533F" stroke-opacity="0.25" stroke-width="10"/>
+  <text x="600" y="545" text-anchor="middle" fill="#41533F" font-family="Arial, sans-serif" font-size="42" font-weight="700" letter-spacing="10">OFF GRID</text>
+  <text x="600" y="1268" text-anchor="middle" fill="#111315" font-family="Arial, sans-serif" font-size="86" font-weight="700" letter-spacing="16">STUDIO TEE</text>
+  <text x="600" y="1340" text-anchor="middle" fill="#41533F" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="8">FIELD NOTES DIVISION</text>
+</svg>

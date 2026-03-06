@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
-import { SHIRT_SIZES } from "@/lib/constants";
-import { slugify } from "@/lib/utils";
+import { SHIRT_SIZES } from "../lib/constants";
+import { slugify } from "../lib/utils";
 
 const prisma = new PrismaClient();
 

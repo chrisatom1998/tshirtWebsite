@@ -1,0 +1,11 @@
+<svg width="1200" height="1500" viewBox="0 0 1200 1500" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="1500" rx="48" fill="#ECE8E0"/>
+  <rect x="80" y="80" width="1040" height="1340" rx="36" fill="#F7F1E8" stroke="#111315" stroke-opacity="0.08" stroke-width="8"/>
+  <path d="M414 330L508 238H692L786 330L920 392L856 556L764 520V1102H436V520L344 556L280 392L414 330Z" fill="#F8F4ED" stroke="#111315" stroke-opacity="0.18" stroke-width="10"/>
+  <rect x="380" y="500" width="440" height="250" rx="28" fill="#244A5F" fill-opacity="0.12"/>
+  <path d="M420 560C500 500 700 500 780 560" stroke="#244A5F" stroke-width="14" stroke-linecap="round"/>
+  <path d="M420 650C500 590 700 590 780 650" stroke="#244A5F" stroke-width="14" stroke-linecap="round"/>
+  <path d="M420 740C500 680 700 680 780 740" stroke="#244A5F" stroke-width="14" stroke-linecap="round"/>
+  <text x="600" y="930" text-anchor="middle" fill="#111315" font-family="Arial, sans-serif" font-size="86" font-weight="700" letter-spacing="14">TRANSMIT</text>
+  <text x="600" y="1004" text-anchor="middle" fill="#244A5F" font-family="Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="8">SIGNAL ARCHIVE 1998</text>
+</svg>

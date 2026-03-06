@@ -215,6 +215,9 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id || null;
+    const shippingAddress = session.shipping_details?.address
+      ? (session.shipping_details.address as Prisma.InputJsonValue)
+      : undefined;
 
     const order = await tx.order.create({
       data: {
@@ -229,7 +232,7 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         shippingAmount: session.total_details?.amount_shipping ?? STANDARD_SHIPPING_RATE,
         taxAmount: session.total_details?.amount_tax ?? 0,
         total: session.amount_total ?? checkout.amountSubtotal + STANDARD_SHIPPING_RATE,
-        shippingAddress: (session.shipping_details?.address as Prisma.InputJsonValue) || Prisma.JsonNull,
+        ...(shippingAddress ? { shippingAddress } : {}),
         items: {
           create: snapshot.map((item) => ({
             productId: item.productId,
@@ -269,11 +272,11 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
   });
 }
 
-export function getShippingOptions() {
+export function getShippingOptions(): Stripe.Checkout.SessionCreateParams.ShippingOption[] {
   return [
     {
       shipping_rate_data: {
-        type: "fixed_amount" as const,
+        type: "fixed_amount",
         fixed_amount: {
           amount: STANDARD_SHIPPING_RATE,
           currency: CURRENCY,
@@ -281,11 +284,11 @@ export function getShippingOptions() {
         display_name: "Standard shipping",
         delivery_estimate: {
           minimum: {
-            unit: "business_day" as const,
+            unit: "business_day",
             value: 3,
           },
           maximum: {
-            unit: "business_day" as const,
+            unit: "business_day",
             value: 7,
           },
         },
@@ -293,7 +296,7 @@ export function getShippingOptions() {
     },
     {
       shipping_rate_data: {
-        type: "fixed_amount" as const,
+        type: "fixed_amount",
         fixed_amount: {
           amount: EXPRESS_SHIPPING_RATE,
           currency: CURRENCY,
@@ -301,11 +304,11 @@ export function getShippingOptions() {
         display_name: "Express shipping",
         delivery_estimate: {
           minimum: {
-            unit: "business_day" as const,
+            unit: "business_day",
             value: 1,
           },
           maximum: {
-            unit: "business_day" as const,
+            unit: "business_day",
             value: 3,
           },
         },

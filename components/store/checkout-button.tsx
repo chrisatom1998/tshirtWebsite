@@ -14,30 +14,36 @@ export function CheckoutButton({
   const [error, setError] = useState("");
 
   const beginCheckout = () => {
-    startTransition(async () => {
-      setError("");
+    startTransition(() => {
+      void (async () => {
+        try {
+          setError("");
 
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: items.map((item) => ({
-            variantId: item.variantId,
-            quantity: item.quantity,
-          })),
-        }),
-      });
+          const response = await fetch("/api/checkout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              items: items.map((item) => ({
+                variantId: item.variantId,
+                quantity: item.quantity,
+              })),
+            }),
+          });
 
-      const payload = await response.json().catch(() => null);
+          const payload = await response.json().catch(() => null);
 
-      if (!response.ok || !payload?.url) {
-        setError(payload?.message || "Unable to start checkout.");
-        return;
-      }
+          if (!response.ok || !payload?.url) {
+            setError(payload?.message || "Unable to start checkout.");
+            return;
+          }
 
-      window.location.assign(payload.url);
+          window.location.assign(payload.url);
+        } catch {
+          setError("Unable to start checkout.");
+        }
+      })();
     });
   };
 

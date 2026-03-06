@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 import { useCart } from "@/components/store/cart-provider";
 import { ButtonLink } from "@/components/ui/button";
@@ -31,6 +31,9 @@ type OrderResponse = {
 
 export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
   const { clearCart } = useCart();
+  const clearCartAfterSuccess = useEffectEvent(() => {
+    clearCart();
+  });
   const [state, setState] = useState<
     { status: "loading" } | { status: "ready"; order: NonNullable<OrderResponse["order"]> } | { status: "error"; message: string }
   >({ status: "loading" });
@@ -65,11 +68,11 @@ export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
         return;
       }
 
-      clearCart();
+      clearCartAfterSuccess();
       setState({ status: "ready", order: payload.order });
     };
 
-    poll();
+    void poll();
 
     return () => {
       cancelled = true;
@@ -77,7 +80,7 @@ export function OrderConfirmation({ sessionId }: { sessionId?: string }) {
         clearTimeout(timer);
       }
     };
-  }, [clearCart, sessionId]);
+  }, [clearCartAfterSuccess, sessionId]);
 
   if (state.status === "loading") {
     return (
