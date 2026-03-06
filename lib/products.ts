@@ -50,6 +50,13 @@ export type DashboardLowStockProduct = Prisma.ProductGetPayload<{
   };
 }>;
 
+type StorefrontFilterRecord = Prisma.ProductGetPayload<{
+  select: {
+    sizes: true;
+    colors: true;
+  };
+}>;
+
 export type AdminDashboardData = {
   productCount: number;
   orderCount: number;
@@ -99,7 +106,7 @@ export async function getStorefrontProducts(filters: {
 }
 
 export async function getStorefrontFilterOptions(): Promise<{ sizes: string[]; colors: string[] }> {
-  const products = await db.product.findMany({
+  const products: StorefrontFilterRecord[] = await db.product.findMany({
     where: { isActive: true },
     select: { sizes: true, colors: true },
   });

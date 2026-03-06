@@ -4,6 +4,8 @@
 
 :root {
   color-scheme: light;
+  --font-body: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  --font-heading: "Gill Sans", "Franklin Gothic Medium", "Avenir Next Condensed", sans-serif;
 }
 
 html {

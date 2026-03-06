@@ -89,6 +89,8 @@ Copy `.env.local.example` to `.env.local` and set these values:
 npm install
 ```
 
+If the repository lives inside a synced folder such as OneDrive, local `next build` can stall for a very long time on Windows. If that happens, move or copy the project to a normal local path such as `C:\projects\tshirtWebsite` before building.
+
 2. Create `.env.local` from `.env.local.example` and fill in the values.
 
 3. Apply the included Prisma migration.
@@ -200,6 +202,14 @@ Then copy the production webhook signing secret into the Vercel environment vari
 
 ## Verification status
 
-The repository structure, application code, schema, migration, seed script, and setup documentation are in place.
+Verified locally with:
 
-I was not able to run `npm install`, Prisma, or Next.js build commands in this workspace because dependencies are not installed here and network access is restricted, so you should run the setup steps locally to complete dependency installation and execute the verification checklist.
+- `npm install`
+- `npx prisma generate`
+- `npx prisma migrate deploy`
+- `npm run prisma:seed`
+- `npx tsc --noEmit`
+- `npx eslint . --max-warnings=0`
+- `npm run build`
+
+Important local note: in the original workspace path under OneDrive, `next build` stalled for an extended period. The same code and dependencies built successfully from a plain local path outside OneDrive, which points to a filesystem/sync performance issue rather than an application build error.

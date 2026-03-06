@@ -11,6 +11,20 @@ import { db } from "@/lib/db";
 import type { CheckoutSnapshotItem } from "@/lib/types";
 import { createOrderNumber } from "@/lib/utils";
 
+const checkoutVariantInclude = Prisma.validator<Prisma.ProductVariantInclude>()({
+  product: {
+    include: {
+      images: {
+        orderBy: { position: "asc" },
+      },
+    },
+  },
+});
+
+type CheckoutVariant = Prisma.ProductVariantGetPayload<{
+  include: typeof checkoutVariantInclude;
+}>;
+
 export async function createCheckoutSnapshot(items: { variantId: string; quantity: number }[]) {
   const aggregatedItems = Array.from(
     items.reduce((map, item) => {
@@ -19,22 +33,14 @@ export async function createCheckoutSnapshot(items: { variantId: string; quantit
     }, new Map<string, number>()),
   ).map(([variantId, quantity]) => ({ variantId, quantity }));
 
-  const variants = await db.productVariant.findMany({
+  const variants: CheckoutVariant[] = await db.productVariant.findMany({
     where: {
       id: {
         in: aggregatedItems.map((item) => item.variantId),
       },
       isActive: true,
     },
-    include: {
-      product: {
-        include: {
-          images: {
-            orderBy: { position: "asc" },
-          },
-        },
-      },
-    },
+    include: checkoutVariantInclude,
   });
 
   if (variants.length !== aggregatedItems.length) {
@@ -84,7 +90,7 @@ export async function reserveCheckout(snapshot: CheckoutSnapshotItem[], subtotal
     return map;
   }, new Map<string, number>());
 
-  return db.$transaction(async (tx) => {
+  return db.$transaction(async (tx: Prisma.TransactionClient) => {
     for (const item of snapshot) {
       const updated = await tx.productVariant.updateMany({
         where: {
@@ -132,7 +138,7 @@ export async function releaseCheckoutReservation(
   checkoutId: string,
   status: CheckoutStatus = CheckoutStatus.EXPIRED,
 ) {
-  return db.$transaction(async (tx) => {
+  return db.$transaction(async (tx: Prisma.TransactionClient) => {
     const checkout = await tx.checkout.findUnique({
       where: { id: checkoutId },
     });
@@ -190,7 +196,7 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
     throw new Error("Checkout session metadata is missing checkoutId.");
   }
 
-  return db.$transaction(async (tx) => {
+  return db.$transaction(async (tx: Prisma.TransactionClient) => {
     const checkout = await tx.checkout.findUnique({
       where: { id: checkoutId },
       include: { order: true },
@@ -216,7 +222,7 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         ? session.payment_intent
         : session.payment_intent?.id || null;
     const shippingAddress = session.customer_details?.address
-      ? (session.customer_details.address as Prisma.InputJsonValue)
+      ? (session.customer_details.address as unknown as Prisma.InputJsonValue)
       : undefined;
 
     const order = await tx.order.create({
@@ -263,8 +269,8 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
           email,
           name: session.customer_details?.name || null,
           phone: session.customer_details?.phone || null,
-          shippingAddress: session.customer_details?.address || null,
-        },
+          shippingAddress: (session.customer_details?.address ?? null) as unknown as Prisma.InputJsonValue | null,
+        } as Prisma.InputJsonValue,
       },
     });
 
