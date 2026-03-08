@@ -1,22 +1,169 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
 import { CheckoutButton } from "@/components/store/checkout-button";
 import { useCart } from "@/components/store/cart-provider";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
+import type { AppliedCoupon } from "@/lib/types";
 import { formatCurrency } from "@/lib/utils";
 
 export function CartPage() {
-  const { items, subtotal, estimatedShipping, updateQuantity, removeItem } = useCart();
+  const {
+    items,
+    subtotal,
+    estimatedShipping,
+    updateQuantity,
+    removeItem,
+    couponCode,
+    setCouponCode,
+    clearCoupon,
+  } = useCart();
+  const [draftCoupon, setDraftCoupon] = useState(couponCode);
+  const [couponPreview, setCouponPreview] = useState<AppliedCoupon | null>(null);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponError, setCouponError] = useState("");
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const clearCouponRef = useRef(clearCoupon);
+
+  useEffect(() => {
+    setDraftCoupon(couponCode);
+  }, [couponCode]);
+
+  useEffect(() => {
+    clearCouponRef.current = clearCoupon;
+  }, [clearCoupon]);
+
+  useEffect(() => {
+    if (!couponCode || items.length === 0) {
+      setCouponPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshPreview = async () => {
+      try {
+        const response = await fetch("/api/coupons/preview", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            code: couponCode,
+            items: items.map((item) => ({
+              variantId: item.variantId,
+              quantity: item.quantity,
+            })),
+          }),
+        });
+        const payload = (await response.json().catch(() => null)) as
+          | {
+              discountAmount?: number;
+              coupon?: AppliedCoupon;
+              message?: string;
+            }
+          | null;
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!response.ok || !payload?.coupon || typeof payload.discountAmount !== "number") {
+          clearCouponRef.current();
+          setCouponPreview(null);
+          setCouponError(payload?.message || "That coupon is no longer valid for this cart.");
+          return;
+        }
+
+        setCouponPreview({
+          code: payload.coupon.code,
+          title: payload.coupon.title,
+          description: payload.coupon.description,
+          discountAmount: payload.discountAmount,
+        });
+      } catch {
+        if (!cancelled) {
+          setCouponPreview(null);
+        }
+      }
+    };
+
+    void refreshPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [couponCode, items]);
+
+  const applyCoupon = async () => {
+    if (!draftCoupon.trim()) {
+      clearCoupon();
+      setCouponPreview(null);
+      setCouponMessage("");
+      setCouponError("");
+      return;
+    }
+
+    setIsApplyingCoupon(true);
+    setCouponError("");
+    setCouponMessage("");
+
+    try {
+      const response = await fetch("/api/coupons/preview", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code: draftCoupon.trim(),
+          items: items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+          })),
+        }),
+      });
+      const payload = (await response.json().catch(() => null)) as
+        | {
+            discountAmount?: number;
+            coupon?: AppliedCoupon;
+            message?: string;
+          }
+        | null;
+
+      if (!response.ok || !payload?.coupon || typeof payload.discountAmount !== "number") {
+        setCouponPreview(null);
+        setCouponError(payload?.message || "Unable to apply coupon.");
+        return;
+      }
+
+      setCouponCode(payload.coupon.code);
+      setDraftCoupon(payload.coupon.code);
+      setCouponPreview({
+        code: payload.coupon.code,
+        title: payload.coupon.title,
+        description: payload.coupon.description,
+        discountAmount: payload.discountAmount,
+      });
+      setCouponMessage(`${payload.coupon.code} applied to this cart.`);
+    } catch {
+      setCouponError("Unable to apply coupon.");
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const discountAmount = couponPreview?.discountAmount || 0;
 
   if (items.length === 0) {
     return (
       <EmptyState
         title="Your cart is empty"
-        description="Browse the latest drop, add a few sizes, and come back here when youâ€™re ready to check out."
+        description="Browse the latest drop, add a few sizes, and come back here when you're ready to check out."
         actionLabel="Browse products"
         actionHref="/products"
       />
@@ -36,7 +183,8 @@ export function CartPage() {
                     {item.title}
                   </Link>
                   <p className="mt-2 text-sm text-black/65">
-                    {item.size}{item.color ? ` Â· ${item.color}` : ""}
+                    {item.size}
+                    {item.color ? ` / ${item.color}` : ""}
                   </p>
                 </div>
                 <p className="text-lg font-semibold text-ink">{formatCurrency(item.price * item.quantity)}</p>
@@ -67,18 +215,56 @@ export function CartPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-black/45">Order summary</p>
           <h2 className="mt-2 font-[family-name:var(--font-heading)] text-3xl font-semibold text-ink">Ready to check out</h2>
         </div>
+        <div className="space-y-3 rounded-[1.5rem] border border-black/10 bg-white/70 p-4">
+          <p className="text-sm font-semibold text-ink">Apply coupon</p>
+          <div className="flex gap-3">
+            <Input value={draftCoupon} onChange={(event) => setDraftCoupon(event.target.value.toUpperCase())} placeholder="WELCOME10" />
+            <Button type="button" variant="ghost" onClick={applyCoupon} disabled={isApplyingCoupon}>
+              {isApplyingCoupon ? "Applying..." : "Apply"}
+            </Button>
+          </div>
+          {couponPreview ? (
+            <div className="flex items-center justify-between rounded-2xl border border-black/10 bg-canvas/70 px-4 py-3 text-sm text-black/65">
+              <div>
+                <p className="font-semibold text-ink">{couponPreview.code}</p>
+                <p>{couponPreview.title}</p>
+              </div>
+              <button
+                type="button"
+                className="font-semibold text-red-600 hover:text-red-700"
+                onClick={() => {
+                  clearCoupon();
+                  setDraftCoupon("");
+                  setCouponPreview(null);
+                  setCouponMessage("");
+                  setCouponError("");
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ) : null}
+          {couponMessage ? <p className="text-sm text-moss">{couponMessage}</p> : null}
+          {couponError ? <p className="text-sm text-red-600">{couponError}</p> : null}
+        </div>
         <div className="space-y-3 text-sm text-black/65">
           <div className="flex items-center justify-between">
             <span>Subtotal</span>
             <span className="font-semibold text-ink">{formatCurrency(subtotal)}</span>
           </div>
+          {discountAmount > 0 ? (
+            <div className="flex items-center justify-between">
+              <span>Coupon discount</span>
+              <span className="font-semibold text-moss">-{formatCurrency(discountAmount)}</span>
+            </div>
+          ) : null}
           <div className="flex items-center justify-between">
             <span>Shipping estimate</span>
             <span className="font-semibold text-ink">{formatCurrency(estimatedShipping)}</span>
           </div>
           <div className="flex items-center justify-between border-t border-black/10 pt-3 text-base">
             <span className="font-semibold text-ink">Estimated total</span>
-            <span className="font-semibold text-ink">{formatCurrency(subtotal + estimatedShipping)}</span>
+            <span className="font-semibold text-ink">{formatCurrency(subtotal - discountAmount + estimatedShipping)}</span>
           </div>
         </div>
         <CheckoutButton className="w-full" size="lg" />

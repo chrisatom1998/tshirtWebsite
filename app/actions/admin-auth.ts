@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { createAdminSession, verifyPassword, clearAdminSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import type { ActionState } from "@/lib/types";
+import { normalizeEmail } from "@/lib/utils";
 import { loginSchema } from "@/lib/validators";
 
 export async function loginAction(_: ActionState, formData: FormData): Promise<ActionState> {
@@ -22,7 +23,7 @@ export async function loginAction(_: ActionState, formData: FormData): Promise<A
   }
 
   const user = await db.user.findUnique({
-    where: { email: parsed.data.email.toLowerCase() },
+    where: { email: normalizeEmail(parsed.data.email) },
   });
 
   if (!user || user.role !== Role.ADMIN) {

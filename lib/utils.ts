@@ -22,6 +22,14 @@ export function formatPriceInput(amount: number) {
   return (amount / 100).toFixed(2);
 }
 
+export function normalizeEmail(value: string) {
+  return value.trim().toLowerCase();
+}
+
+export function normalizeCouponCode(value: string) {
+  return value.trim().toUpperCase();
+}
+
 export function slugify(value: string) {
   return value
     .trim()
@@ -58,4 +66,18 @@ export function createOrderNumber() {
   const stamp = Date.now().toString(36).toUpperCase();
   const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `TLS-${stamp}-${suffix}`;
+}
+
+export function formatDateTimeLocalInput(value: Date | string | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
 }

@@ -1,4 +1,4 @@
-import { CheckoutStatus, Prisma } from "@prisma/client";
+import { CheckoutStatus, OrderStatus, Prisma, Role } from "@prisma/client";
 import type Stripe from "stripe";
 
 import {
@@ -7,6 +7,7 @@ import {
   EXPRESS_SHIPPING_RATE,
   STANDARD_SHIPPING_RATE,
 } from "@/lib/constants";
+import { getCouponSummary, type CouponSummary } from "@/lib/coupons";
 import { db } from "@/lib/db";
 import type { CheckoutSnapshotItem } from "@/lib/types";
 import { createOrderNumber } from "@/lib/utils";
@@ -25,7 +26,36 @@ type CheckoutVariant = Prisma.ProductVariantGetPayload<{
   include: typeof checkoutVariantInclude;
 }>;
 
-export async function createCheckoutSnapshot(items: { variantId: string; quantity: number }[]) {
+function applyCouponToSnapshot(snapshot: CheckoutSnapshotItem[], totalDiscount: number) {
+  if (totalDiscount <= 0 || snapshot.length === 0) {
+    return snapshot;
+  }
+
+  const subtotal = snapshot.reduce((sum, item) => sum + item.listUnitAmount * item.quantity, 0);
+  let remainingDiscount = totalDiscount;
+  let remainingSubtotal = subtotal;
+
+  return snapshot.map((item, index) => {
+    const lineSubtotal = item.listUnitAmount * item.quantity;
+    const discountAmount =
+      index === snapshot.length - 1
+        ? remainingDiscount
+        : Math.min(lineSubtotal, Math.floor((remainingDiscount * lineSubtotal) / Math.max(remainingSubtotal, 1)));
+    const totalAmount = lineSubtotal - discountAmount;
+
+    remainingDiscount -= discountAmount;
+    remainingSubtotal -= lineSubtotal;
+
+    return {
+      ...item,
+      discountAmount,
+      unitAmount: item.quantity > 0 ? Math.floor(totalAmount / item.quantity) : 0,
+      totalAmount,
+    };
+  });
+}
+
+export async function createCheckoutSnapshot(items: { variantId: string; quantity: number }[], couponCode?: string) {
   const aggregatedItems = Array.from(
     items.reduce((map, item) => {
       map.set(item.variantId, (map.get(item.variantId) ?? 0) + item.quantity);
@@ -49,7 +79,7 @@ export async function createCheckoutSnapshot(items: { variantId: string; quantit
 
   const variantMap = new Map(variants.map((variant) => [variant.id, variant]));
 
-  const snapshot: CheckoutSnapshotItem[] = aggregatedItems.map(({ variantId, quantity }) => {
+  const baseSnapshot: CheckoutSnapshotItem[] = aggregatedItems.map(({ variantId, quantity }) => {
     const variant = variantMap.get(variantId);
 
     if (!variant) {
@@ -71,19 +101,41 @@ export async function createCheckoutSnapshot(items: { variantId: string; quantit
       sku: variant.sku ?? null,
       size: variant.size,
       color: variant.color,
+      listUnitAmount: variant.price,
       unitAmount: variant.price,
+      discountAmount: 0,
       quantity,
       totalAmount: variant.price * quantity,
     };
   });
 
+  const subtotal = baseSnapshot.reduce((sum, item) => sum + item.totalAmount, 0);
+  const coupon = await getCouponSummary(couponCode, subtotal);
+  const snapshot = coupon ? applyCouponToSnapshot(baseSnapshot, coupon.discountAmount) : baseSnapshot;
+
   return {
     snapshot,
-    subtotal: snapshot.reduce((sum, item) => sum + item.totalAmount, 0),
+    subtotal,
+    coupon,
+    discountAmount: coupon?.discountAmount ?? 0,
   };
 }
 
-export async function reserveCheckout(snapshot: CheckoutSnapshotItem[], subtotal: number) {
+export async function reserveCheckout({
+  snapshot,
+  subtotal,
+  discountAmount,
+  coupon,
+  customerId,
+  email,
+}: {
+  snapshot: CheckoutSnapshotItem[];
+  subtotal: number;
+  discountAmount: number;
+  coupon: CouponSummary | null;
+  customerId?: string | null;
+  email?: string | null;
+}) {
   const reservedUntil = new Date(Date.now() + CHECKOUT_RESERVATION_MINUTES * 60 * 1000);
   const productAdjustments = snapshot.reduce((map, item) => {
     map.set(item.productId, (map.get(item.productId) ?? 0) + item.quantity);
@@ -125,7 +177,13 @@ export async function reserveCheckout(snapshot: CheckoutSnapshotItem[], subtotal
 
     return tx.checkout.create({
       data: {
+        customerId: customerId || null,
+        email: email || null,
+        couponId: coupon?.couponId ?? null,
+        couponCode: coupon?.code ?? null,
         amountSubtotal: subtotal,
+        amountDiscount: discountAmount,
+        amountTotal: subtotal - discountAmount,
         currency: CURRENCY,
         reservedUntil,
         cartSnapshot: snapshot as Prisma.InputJsonValue,
@@ -210,7 +268,7 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
       return checkout.order;
     }
 
-    const email = session.customer_details?.email || session.customer_email;
+    const email = session.customer_details?.email || session.customer_email || checkout.email;
 
     if (!email) {
       throw new Error("Stripe Checkout completed without a customer email.");
@@ -224,6 +282,18 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
     const shippingAddress = session.customer_details?.address
       ? (session.customer_details.address as unknown as Prisma.InputJsonValue)
       : undefined;
+    const customer =
+      checkout.customerId
+        ? { id: checkout.customerId }
+        : await tx.user.findFirst({
+            where: {
+              email,
+              role: Role.CUSTOMER,
+            },
+            select: {
+              id: true,
+            },
+          });
 
     const order = await tx.order.create({
       data: {
@@ -231,13 +301,26 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         checkoutId,
         stripeCheckoutSessionId: session.id,
         stripePaymentIntentId: paymentIntentId,
+        customerId: customer?.id ?? null,
         email,
         customerName: session.customer_details?.name || null,
         currency: checkout.currency,
+        // Business rule: orders with any discount are initially marked as PROCESSING
+        // to allow additional validation/review (e.g. fraud or coupon abuse checks),
+        // while full-price orders are considered PAID immediately after Stripe confirms payment.
+        status: checkout.amountDiscount > 0 ? OrderStatus.PROCESSING : OrderStatus.PAID,
         subtotal: checkout.amountSubtotal,
+        discountAmount: checkout.amountDiscount,
+        couponId: checkout.couponId,
+        couponCode: checkout.couponCode,
         shippingAmount: session.total_details?.amount_shipping ?? STANDARD_SHIPPING_RATE,
         taxAmount: session.total_details?.amount_tax ?? 0,
-        total: session.amount_total ?? checkout.amountSubtotal + STANDARD_SHIPPING_RATE,
+        total:
+          session.amount_total ??
+          checkout.amountSubtotal -
+            checkout.amountDiscount +
+            (session.total_details?.amount_shipping ?? STANDARD_SHIPPING_RATE) +
+            (session.total_details?.amount_tax ?? 0),
         ...(shippingAddress ? { shippingAddress } : {}),
         items: {
           create: snapshot.map((item) => ({
@@ -249,7 +332,8 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
             sku: item.sku,
             size: item.size,
             color: item.color,
-            unitAmount: item.unitAmount,
+            unitAmount: item.listUnitAmount,
+            discountAmount: item.discountAmount,
             quantity: item.quantity,
             totalAmount: item.totalAmount,
           })),
@@ -263,8 +347,9 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
       data: {
         status: CheckoutStatus.COMPLETED,
         stripeSessionId: session.id,
+        customerId: customer?.id ?? null,
         email,
-        amountTotal: session.amount_total ?? checkout.amountSubtotal,
+        amountTotal: session.amount_total ?? checkout.amountSubtotal - checkout.amountDiscount,
         customerDetails: {
           email,
           name: session.customer_details?.name || null,
@@ -273,6 +358,17 @@ export async function completeCheckoutFromSession(session: Stripe.Checkout.Sessi
         } as Prisma.InputJsonValue,
       },
     });
+
+    if (checkout.couponId) {
+      await tx.coupon.update({
+        where: { id: checkout.couponId },
+        data: {
+          usedCount: {
+            increment: 1,
+          },
+        },
+      });
+    }
 
     return order;
   });
@@ -322,4 +418,3 @@ export function getShippingOptions(): Stripe.Checkout.SessionCreateParams.Shippi
     },
   ];
 }
-

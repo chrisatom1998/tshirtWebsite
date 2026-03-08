@@ -20,13 +20,15 @@ export type CheckoutSnapshotItem = {
   sku: string | null;
   size: string;
   color: string;
+  listUnitAmount: number;
   unitAmount: number;
+  discountAmount: number;
   quantity: number;
   totalAmount: number;
 };
 
 export type ActionState = {
-  status: "idle" | "error";
+  status: "idle" | "error" | "success";
   message?: string;
   fieldErrors?: Record<string, string[]>;
 };
@@ -54,4 +56,11 @@ export type AdminProductFormValues = {
   isActive: boolean;
   images: AdminImageInput[];
   variants: AdminVariantInput[];
+};
+
+export type AppliedCoupon = {
+  code: string;
+  title: string;
+  description?: string | null;
+  discountAmount: number;
 };

@@ -9,7 +9,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 
 export function CartDrawer() {
-  const { items, subtotal, estimatedShipping, isOpen, closeCart, updateQuantity, removeItem } = useCart();
+  const { items, subtotal, estimatedShipping, isOpen, closeCart, updateQuantity, removeItem, couponCode } = useCart();
 
   return (
     <>
@@ -36,9 +36,7 @@ export function CartDrawer() {
           {items.length === 0 ? (
             <div className="glass-panel space-y-3 p-6">
               <p className="font-[family-name:var(--font-heading)] text-2xl font-semibold text-ink">Cart is empty</p>
-              <p className="text-sm leading-7 text-black/65">
-                Add a shirt to start checkout. Your cart stays saved between refreshes.
-              </p>
+              <p className="text-sm leading-7 text-black/65">Add a shirt to start checkout. Your cart stays saved between refreshes.</p>
               <ButtonLink href="/products" variant="secondary" onClick={closeCart}>
                 Shop now
               </ButtonLink>
@@ -46,18 +44,15 @@ export function CartDrawer() {
           ) : (
             items.map((item) => (
               <div key={item.variantId} className="glass-panel flex gap-4 p-4">
-                <img
-                  src={item.imageUrl}
-                  alt={item.title}
-                  className="h-24 w-20 rounded-2xl border border-black/10 bg-white object-cover"
-                />
+                <img src={item.imageUrl} alt={item.title} className="h-24 w-20 rounded-2xl border border-black/10 bg-white object-cover" />
                 <div className="flex flex-1 flex-col gap-3">
                   <div>
                     <Link href={`/products/${item.slug}`} className="font-semibold text-ink hover:text-clay" onClick={closeCart}>
                       {item.title}
                     </Link>
                     <p className="text-sm text-black/55">
-                      {item.size}{item.color ? ` Â· ${item.color}` : ""}
+                      {item.size}
+                      {item.color ? ` / ${item.color}` : ""}
                     </p>
                     <p className="mt-1 text-sm font-semibold text-ink">{formatCurrency(item.price)}</p>
                   </div>
@@ -95,6 +90,12 @@ export function CartDrawer() {
               <span>Subtotal</span>
               <span className="font-semibold text-ink">{formatCurrency(subtotal)}</span>
             </div>
+            {couponCode ? (
+              <div className="flex items-center justify-between">
+                <span>Coupon</span>
+                <span className="font-semibold text-moss">{couponCode}</span>
+              </div>
+            ) : null}
             <div className="flex items-center justify-between">
               <span>Estimated shipping</span>
               <span className="font-semibold text-ink">{items.length ? formatCurrency(estimatedShipping) : "-"}</span>

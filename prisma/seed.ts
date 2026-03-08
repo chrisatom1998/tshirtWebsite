@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { CouponType, PrismaClient, Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 import { SHIRT_SIZES } from "../lib/constants";
@@ -8,6 +8,7 @@ const prisma = new PrismaClient();
 
 const adminEmail = process.env.ADMIN_EMAIL || "owner@threadline.local";
 const adminPassword = process.env.ADMIN_PASSWORD || "ChangeMe123!";
+const welcomeCouponCode = process.env.WELCOME_COUPON_CODE || "WELCOME10";
 
 const sampleProducts = [
   {
@@ -57,11 +58,12 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: { passwordHash },
+    update: { passwordHash, role: Role.ADMIN, name: "Store Owner" },
     create: {
       email: adminEmail,
       name: "Store Owner",
       passwordHash,
+      role: Role.ADMIN,
     },
   });
 
@@ -126,8 +128,30 @@ async function main() {
     });
   }
 
+  await prisma.coupon.upsert({
+    where: { code: welcomeCouponCode },
+    update: {
+      title: "Welcome discount",
+      description: "Starter coupon for first-time customers.",
+      type: CouponType.PERCENTAGE,
+      amount: 10,
+      minimumSubtotal: 3000,
+      isActive: true,
+    },
+    create: {
+      code: welcomeCouponCode,
+      title: "Welcome discount",
+      description: "Starter coupon for first-time customers.",
+      type: CouponType.PERCENTAGE,
+      amount: 10,
+      minimumSubtotal: 3000,
+      isActive: true,
+    },
+  });
+
   console.log(`Seeded admin user ${adminEmail}`);
   console.log("Seeded sample t-shirt catalog.");
+  console.log(`Seeded coupon ${welcomeCouponCode}`);
 }
 
 main()

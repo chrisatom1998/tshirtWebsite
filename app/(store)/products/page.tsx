@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { CatalogPagination } from "@/components/store/catalog-pagination";
 import { ProductCard } from "@/components/store/product-card";
 import { ProductFilters } from "@/components/store/product-filters";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -25,9 +26,11 @@ export default async function ProductsPage({
   const size = firstValue(resolved.size);
   const color = firstValue(resolved.color);
   const featured = firstValue(resolved.featured);
+  const sort = firstValue(resolved.sort) || "featured";
+  const page = Number(firstValue(resolved.page) || "1");
 
-  const [products, filterOptions] = await Promise.all([
-    getStorefrontProducts({ search, size, color, featured }),
+  const [productPage, filterOptions] = await Promise.all([
+    getStorefrontProducts({ search, size, color, featured, sort, page }),
     getStorefrontFilterOptions(),
   ]);
 
@@ -46,8 +49,15 @@ export default async function ProductsPage({
           currentSize={size}
           currentColor={color}
           currentFeatured={featured}
+          currentSort={sort}
         />
-        {products.length === 0 ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-black/55">
+          <p>
+            {productPage.totalCount} product{productPage.totalCount === 1 ? "" : "s"} found
+          </p>
+          <p>Sorted by {sort.replace("-", " ")}</p>
+        </div>
+        {productPage.products.length === 0 ? (
           <EmptyState
             title="No products matched these filters"
             description="Try removing a filter, broadening your search terms, or reset back to the full collection."
@@ -55,10 +65,23 @@ export default async function ProductsPage({
             actionHref="/products"
           />
         ) : (
-          <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+          <div className="space-y-6">
+            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {productPage.products.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+            <CatalogPagination
+              page={productPage.page}
+              totalPages={productPage.totalPages}
+              searchParams={{
+                search,
+                size,
+                color,
+                featured,
+                sort,
+              }}
+            />
           </div>
         )}
       </div>

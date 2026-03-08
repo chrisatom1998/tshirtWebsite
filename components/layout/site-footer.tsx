@@ -19,22 +19,22 @@ export function SiteFooter() {
             <Link className="block hover:text-ink" href="/cart">
               Cart
             </Link>
-            <Link className="block hover:text-ink" href="/checkout/cancel">
+            <Link className="block hover:text-ink" href="/support">
               Returns and support
             </Link>
           </div>
         </div>
         <div className="space-y-3 text-sm text-black/65">
-          <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Admin</p>
+          <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Account</p>
           <div className="space-y-2">
-            <Link className="block hover:text-ink" href="/admin/login">
+            <Link className="block hover:text-ink" href="/account/login">
               Sign in
             </Link>
-            <Link className="block hover:text-ink" href="/admin/products">
-              Product studio
+            <Link className="block hover:text-ink" href="/account">
+              Dashboard
             </Link>
-            <Link className="block hover:text-ink" href="/admin/orders">
-              Orders
+            <Link className="block hover:text-ink" href="/admin/login">
+              Admin studio
             </Link>
           </div>
         </div>

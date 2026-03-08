@@ -24,7 +24,7 @@ export function AdminLoginForm() {
       </div>
       <div className="space-y-2">
         <Label>Password</Label>
-        <Input name="password" type="password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" required />
+        <Input name="password" type="password" placeholder="Enter your password" required />
         {state.fieldErrors?.password ? <p className="text-sm text-red-600">{state.fieldErrors.password[0]}</p> : null}
       </div>
       {state.message ? <p className="text-sm text-red-600">{state.message}</p> : null}

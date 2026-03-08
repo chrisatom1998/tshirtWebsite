@@ -1,6 +1,7 @@
 import { ButtonLink } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { PRODUCT_SORT_OPTIONS } from "@/lib/constants";
 
 export function ProductFilters({
   sizes,
@@ -9,6 +10,7 @@ export function ProductFilters({
   currentSize,
   currentColor,
   currentFeatured,
+  currentSort,
 }: {
   sizes: string[];
   colors: string[];
@@ -16,9 +18,10 @@ export function ProductFilters({
   currentSize?: string;
   currentColor?: string;
   currentFeatured?: string;
+  currentSort?: string;
 }) {
   return (
-    <form className="glass-panel grid gap-4 p-6 lg:grid-cols-[2fr,1fr,1fr,auto,auto]" action="/products">
+    <form className="glass-panel grid gap-4 p-6 xl:grid-cols-[2fr,1fr,1fr,1fr,auto,auto]" action="/products">
       <Input name="search" placeholder="Search shirt names or descriptions" defaultValue={currentSearch} />
       <Select name="size" defaultValue={currentSize || ""}>
         <option value="">All sizes</option>
@@ -33,6 +36,13 @@ export function ProductFilters({
         {colors.map((color) => (
           <option key={color} value={color}>
             {color}
+          </option>
+        ))}
+      </Select>
+      <Select name="sort" defaultValue={currentSort || "featured"}>
+        {PRODUCT_SORT_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </Select>

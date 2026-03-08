@@ -2,9 +2,12 @@ import Link from "next/link";
 
 import { CartButton } from "@/components/store/cart-button";
 import { ButtonLink } from "@/components/ui/button";
+import { getCustomerSession } from "@/lib/auth";
 import { BRAND_NAME } from "@/lib/constants";
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const customerSession = await getCustomerSession();
+
   return (
     <header className="sticky top-0 z-40 border-b border-black/5 bg-canvas/85 backdrop-blur-xl">
       <div className="container-shell flex flex-wrap items-center justify-between gap-4 py-4">
@@ -24,8 +27,11 @@ export function SiteHeader() {
           <Link className="hover:text-ink" href="/products">
             Shop
           </Link>
-          <Link className="hover:text-ink" href="/cart">
-            Cart
+          <Link className="hover:text-ink" href="/support">
+            Support
+          </Link>
+          <Link className="hover:text-ink" href="/account">
+            {customerSession ? "Account" : "Sign in"}
           </Link>
           <Link className="hover:text-ink" href="/admin/login">
             Admin
@@ -33,8 +39,8 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <ButtonLink href="/products" variant="ghost" className="hidden sm:inline-flex">
-            Shop the drop
+          <ButtonLink href={customerSession ? "/account" : "/products"} variant="ghost" className="hidden sm:inline-flex">
+            {customerSession ? "Your account" : "Shop the drop"}
           </ButtonLink>
           <CartButton />
         </div>

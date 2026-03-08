@@ -1,3 +1,4 @@
+import { AdminOrderUpdateForm } from "@/components/admin/admin-order-update-form";
 import { OrderStatusPill } from "@/components/admin/order-status-pill";
 import { EmptyState } from "@/components/ui/empty-state";
 import { getAdminOrders } from "@/lib/products";
@@ -10,7 +11,7 @@ export default async function AdminOrdersPage() {
     <div className="space-y-8">
       <div className="space-y-2">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-black/45">Orders</p>
-        <h2 className="font-[family-name:var(--font-heading)] text-5xl font-semibold text-ink">Paid order history</h2>
+        <h2 className="font-[family-name:var(--font-heading)] text-5xl font-semibold text-ink">Fulfillment and status control</h2>
       </div>
 
       {orders.length === 0 ? (
@@ -33,10 +34,16 @@ export default async function AdminOrdersPage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 text-sm text-black/65 md:grid-cols-3">
+              <div className="grid gap-4 text-sm text-black/65 md:grid-cols-4">
                 <div>
                   <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Created</p>
                   <p className="mt-2">{new Date(order.createdAt).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Discount</p>
+                  <p className="mt-2">
+                    {order.discountAmount > 0 ? `${order.couponCode || "Coupon"} · -${formatCurrency(order.discountAmount)}` : "None"}
+                  </p>
                 </div>
                 <div>
                   <p className="font-semibold uppercase tracking-[0.2em] text-black/45">Shipping</p>
@@ -56,12 +63,22 @@ export default async function AdminOrdersPage() {
                   >
                     <div>
                       <p className="font-semibold text-ink">{item.title}</p>
-                      <p>{[item.size, item.color, `Qty ${item.quantity}`].filter(Boolean).join(" / ")}</p>
+                      <p>
+                        {[item.size, item.color, `Qty ${item.quantity}`].filter(Boolean).join(" / ")}
+                      </p>
                     </div>
                     <p className="font-semibold text-ink">{formatCurrency(item.totalAmount)}</p>
                   </div>
                 ))}
               </div>
+
+              <AdminOrderUpdateForm
+                orderId={order.id}
+                status={order.status}
+                shippingCarrier={order.shippingCarrier}
+                trackingNumber={order.trackingNumber}
+                fulfillmentNotes={order.fulfillmentNotes}
+              />
             </div>
           ))}
         </div>

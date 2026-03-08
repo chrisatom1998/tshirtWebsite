@@ -9,6 +9,9 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
     (lowest, variant) => Math.min(lowest, variant.price),
     product.price,
   );
+  const averageRating = product.reviews.length
+    ? Math.round(product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length)
+    : 0;
 
   return (
     <Link
@@ -33,9 +36,14 @@ export function ProductCard({ product }: { product: StorefrontProduct }) {
           <p className="text-sm leading-7 text-black/65">{product.description}</p>
         </div>
         <div className="mt-auto flex items-center justify-between gap-3">
-          <p className="text-sm uppercase tracking-[0.2em] text-black/45">
-            {product.colors.slice(0, 2).join(" Â· ") || "Core colors"}
-          </p>
+          <div className="space-y-1">
+            <p className="text-sm uppercase tracking-[0.2em] text-black/45">
+              {product.colors.slice(0, 2).join(" / ") || "Core colors"}
+            </p>
+            <p className="text-xs text-black/50">
+              {product.reviews.length ? `${averageRating}/5 from ${product.reviews.length} reviews` : "No reviews yet"}
+            </p>
+          </div>
           <p className="text-lg font-semibold text-ink">{formatCurrency(minVariantPrice)}</p>
         </div>
       </div>

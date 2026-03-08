@@ -1,6 +1,7 @@
 import { CheckoutStatus } from "@prisma/client";
 import { NextResponse } from "next/server";
 
+import { getCustomerSession } from "@/lib/auth";
 import { CURRENCY } from "@/lib/constants";
 import {
   createCheckoutSnapshot,
@@ -9,9 +10,9 @@ import {
   reserveCheckout,
   saveStripeSessionId,
 } from "@/lib/checkout";
-import { checkoutRequestSchema } from "@/lib/validators";
-import { absoluteUrl } from "@/lib/utils";
 import { stripe } from "@/lib/stripe";
+import { absoluteUrl } from "@/lib/utils";
+import { checkoutRequestSchema } from "@/lib/validators";
 
 export const runtime = "nodejs";
 
@@ -33,8 +34,19 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { snapshot, subtotal } = await createCheckoutSnapshot(payload.data.items);
-    const checkout = await reserveCheckout(snapshot, subtotal);
+    const customerSession = await getCustomerSession();
+    const { snapshot, subtotal, coupon, discountAmount } = await createCheckoutSnapshot(
+      payload.data.items,
+      payload.data.couponCode,
+    );
+    const checkout = await reserveCheckout({
+      snapshot,
+      subtotal,
+      discountAmount,
+      coupon,
+      customerId: customerSession?.userId,
+      email: customerSession?.email,
+    });
     const origin = request.headers.get("origin") || new URL(request.url).origin;
 
     try {
@@ -42,12 +54,12 @@ export async function POST(request: Request) {
         mode: "payment",
         payment_method_types: ["card"],
         customer_creation: "always",
+        ...(customerSession?.email ? { customer_email: customerSession.email } : {}),
         billing_address_collection: "required",
         shipping_address_collection: {
           allowed_countries: ["US", "CA", "GB", "AU"],
         },
         phone_number_collection: { enabled: true },
-        allow_promotion_codes: true,
         automatic_tax: { enabled: true },
         submit_type: "pay",
         success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -58,13 +70,13 @@ export async function POST(request: Request) {
         },
         shipping_options: getShippingOptions(),
         line_items: snapshot.map((item) => ({
-          quantity: item.quantity,
+          quantity: 1,
           price_data: {
             currency: CURRENCY,
-            unit_amount: item.unitAmount,
+            unit_amount: item.totalAmount,
             product_data: {
               name: item.title,
-              description: [item.size, item.color].filter(Boolean).join(" Â· "),
+              description: [item.size, item.color, `Qty ${item.quantity}`].filter(Boolean).join(" · "),
               images: [absoluteUrl(item.imageUrl, origin)],
             },
           },
@@ -77,7 +89,9 @@ export async function POST(request: Request) {
 
       await saveStripeSessionId(checkout.id, session.id);
 
-      return NextResponse.json({ url: session.url });
+      return NextResponse.json({
+        url: session.url,
+      });
     } catch (error) {
       await releaseCheckoutReservation(checkout.id, CheckoutStatus.FAILED);
       throw error;

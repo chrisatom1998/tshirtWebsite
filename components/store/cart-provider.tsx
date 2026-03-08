@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-import { CART_STORAGE_KEY, STANDARD_SHIPPING_RATE } from "@/lib/constants";
+import { CART_STORAGE_KEY, COUPON_STORAGE_KEY, STANDARD_SHIPPING_RATE } from "@/lib/constants";
 import type { CartItem } from "@/lib/types";
 
 type CartContextValue = {
@@ -12,10 +12,13 @@ type CartContextValue = {
   estimatedShipping: number;
   isHydrated: boolean;
   isOpen: boolean;
+  couponCode: string;
   addItem: (item: CartItem) => void;
   updateQuantity: (variantId: string, quantity: number) => void;
   removeItem: (variantId: string) => void;
   clearCart: () => void;
+  setCouponCode: (code: string) => void;
+  clearCoupon: () => void;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
@@ -36,13 +39,27 @@ function readCartFromStorage() {
   }
 }
 
+function readCouponCodeFromStorage() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  try {
+    return window.localStorage.getItem(COUPON_STORAGE_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [couponCode, setCouponCode] = useState("");
   const [isHydrated, setIsHydrated] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     setItems(readCartFromStorage());
+    setCouponCode(readCouponCodeFromStorage());
     setIsHydrated(true);
   }, []);
 
@@ -53,6 +70,18 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
   }, [isHydrated, items]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    if (couponCode.trim()) {
+      window.localStorage.setItem(COUPON_STORAGE_KEY, couponCode.trim());
+    } else {
+      window.localStorage.removeItem(COUPON_STORAGE_KEY);
+    }
+  }, [couponCode, isHydrated]);
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -104,7 +133,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setItems((current) => current.filter((item) => item.variantId !== variantId));
   };
 
-  const clearCart = () => setItems([]);
+  const clearCart = () => {
+    setItems([]);
+    setCouponCode("");
+  };
 
   return (
     <CartContext.Provider
@@ -115,10 +147,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         estimatedShipping,
         isHydrated,
         isOpen,
+        couponCode,
         addItem,
         updateQuantity,
         removeItem,
         clearCart,
+        setCouponCode,
+        clearCoupon: () => setCouponCode(""),
         openCart: () => setIsOpen(true),
         closeCart: () => setIsOpen(false),
         toggleCart: () => setIsOpen((open) => !open),

@@ -9,11 +9,15 @@ datasource db {
 
 enum Role {
   ADMIN
+  CUSTOMER
 }
 
 enum OrderStatus {
   PAID
+  PROCESSING
   FULFILLED
+  SHIPPED
+  DELIVERED
   CANCELLED
   REFUNDED
 }
@@ -25,14 +29,37 @@ enum CheckoutStatus {
   FAILED
 }
 
+enum CouponType {
+  PERCENTAGE
+  FIXED_AMOUNT
+}
+
+enum SupportTicketType {
+  RETURN
+  SUPPORT
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  name         String?
-  passwordHash String
-  role         Role     @default(ADMIN)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id            String           @id @default(cuid())
+  email         String           @unique
+  name          String?
+  passwordHash  String
+  role          Role             @default(ADMIN)
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  tickets       SupportTicket[]
+  orders        Order[]          @relation("CustomerOrders")
+  checkouts     Checkout[]       @relation("CustomerCheckouts")
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 }
 
 model Product {
@@ -48,6 +75,8 @@ model Product {
   colors         String[]
   images         ProductImage[]
   variants       ProductVariant[]
+  reviews        Review[]
+  wishlistItems  WishlistItem[]
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
@@ -88,8 +117,14 @@ model Checkout {
   id              String         @id @default(cuid())
   stripeSessionId String?        @unique
   status          CheckoutStatus @default(PENDING)
+  customerId      String?
+  customer        User?          @relation("CustomerCheckouts", fields: [customerId], references: [id], onDelete: SetNull)
   email           String?
+  couponId        String?
+  coupon          Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCode      String?
   amountSubtotal  Int
+  amountDiscount  Int            @default(0)
   amountTotal     Int?
   currency        String         @default("usd")
   reservedUntil   DateTime
@@ -100,6 +135,7 @@ model Checkout {
   order           Order?
 
   @@index([status, reservedUntil])
+  @@index([customerId, createdAt])
 }
 
 model Order {
@@ -109,20 +145,35 @@ model Order {
   checkout                Checkout    @relation(fields: [checkoutId], references: [id], onDelete: Restrict)
   stripeCheckoutSessionId String      @unique
   stripePaymentIntentId   String?     @unique
+  customerId              String?
+  customer                User?       @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: SetNull)
   email                   String
   customerName            String?
   currency                String      @default("usd")
   status                  OrderStatus @default(PAID)
   subtotal                Int
+  discountAmount          Int         @default(0)
+  couponId                String?
+  coupon                  Coupon?     @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  couponCode              String?
   shippingAmount          Int         @default(0)
   taxAmount               Int         @default(0)
   total                   Int
   shippingAddress         Json?
+  shippingCarrier         String?
+  trackingNumber          String?
+  fulfillmentNotes        String?
+  fulfilledAt             DateTime?
+  shippedAt               DateTime?
+  deliveredAt             DateTime?
   items                   OrderItem[]
+  tickets                 SupportTicket[]
   createdAt               DateTime    @default(now())
   updatedAt               DateTime    @updatedAt
 
   @@index([createdAt])
+  @@index([customerId, createdAt])
+  @@index([status, updatedAt])
 }
 
 model OrderItem {
@@ -138,9 +189,83 @@ model OrderItem {
   size        String
   color       String   @default("")
   unitAmount  Int
+  discountAmount Int   @default(0)
   quantity    Int
   totalAmount Int
   createdAt   DateTime @default(now())
 
   @@index([orderId])
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  customerId String
+  customer   User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, productId])
+  @@index([productId])
+}
+
+model Review {
+  id               String   @id @default(cuid())
+  customerId       String
+  customer         User     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  rating           Int
+  title            String?
+  body             String
+  verifiedPurchase Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([customerId, productId])
+  @@index([productId, createdAt])
+}
+
+model Coupon {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  title           String
+  description     String?
+  type            CouponType
+  amount          Int
+  minimumSubtotal Int         @default(0)
+  usageLimit      Int?
+  usedCount       Int         @default(0)
+  isActive        Boolean     @default(true)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  checkouts       Checkout[]
+  orders          Order[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([code, isActive])
+}
+
+model SupportTicket {
+  id              String              @id @default(cuid())
+  customerId      String?
+  customer        User?               @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  orderId         String?
+  order           Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderNumber     String?
+  email           String
+  name            String?
+  type            SupportTicketType
+  status          SupportTicketStatus @default(OPEN)
+  subject         String
+  message         String
+  adminResponse   String?
+  resolvedAt      DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+  @@index([orderId, createdAt])
 }

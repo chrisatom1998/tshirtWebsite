@@ -6,14 +6,18 @@ A production-style full-stack T-shirt storefront built with **Next.js App Router
 
 ### Storefront
 - Brand-led homepage with featured products
-- `/products` catalog with search plus size, color, and featured filters
+- `/products` catalog with search, sorting, pagination, and size/color/featured filters
 - Product detail pages with image gallery, variant selection, quantity selection, and add-to-cart flow
+- Customer accounts with login and registration
+- Wishlist saving and customer reviews on product pages
 - Persistent cart stored in local storage
 - Responsive cart drawer and dedicated cart page
+- Returns and support form with ticket tracking
 
 ### Checkout and orders
 - Real Stripe Checkout session creation
 - Stripe-hosted card payments
+- Custom coupon validation and discount application before Stripe checkout
 - Shipping address collection and automatic tax support through Stripe
 - Inventory reservation during checkout creation
 - Stripe webhook handling for completed, expired, and failed checkout sessions
@@ -25,7 +29,9 @@ A production-style full-stack T-shirt storefront built with **Next.js App Router
 - Dashboard summary cards for products, orders, revenue, and low stock
 - Product CRUD with variants, featured flag, visibility toggle, and inventory management
 - Image uploads through Vercel Blob, plus manual image URL entry
-- Order viewer with line items and totals
+- Order fulfillment and status editing with tracking details
+- Coupon management outside Stripe promotion codes
+- Support inbox for customer return and help tickets
 
 ## Tech stack
 
@@ -82,6 +88,7 @@ Copy `.env.local.example` to `.env.local` and set the following values.
 | `BLOB_READ_WRITE_TOKEN` | Optional* | Required only if you want admin image uploads via Vercel Blob |
 | `ADMIN_EMAIL` | Yes | Seeded admin email |
 | `ADMIN_PASSWORD` | Yes | Seeded admin password |
+| `WELCOME_COUPON_CODE` | Optional | Seeded starter coupon code |
 
 \* The storefront still works without Blob configured because the sample catalog uses local images in `public/products`.
 
@@ -230,6 +237,10 @@ Then copy the production signing secret into `STRIPE_WEBHOOK_SECRET` in Vercel a
 - Confirm an expired or failed checkout releases reserved inventory
 - Create, edit, and delete a product from `/admin/products`
 - Upload a product image from the admin when Blob is configured
+- Create a customer account and sign in at `/account/login`
+- Save a wishlist item and submit a product review
+- Apply a custom coupon in the cart and confirm checkout reflects it
+- Submit a support or return request and confirm it appears in `/admin/support`
 
 ## Verification
 

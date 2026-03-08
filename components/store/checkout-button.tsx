@@ -9,7 +9,7 @@ export function CheckoutButton({
   children = "Secure checkout",
   ...props
 }: ButtonProps & { children?: React.ReactNode }) {
-  const { items, isHydrated } = useCart();
+  const { items, isHydrated, couponCode } = useCart();
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState("");
 
@@ -29,6 +29,7 @@ export function CheckoutButton({
                 variantId: item.variantId,
                 quantity: item.quantity,
               })),
+              couponCode: couponCode || undefined,
             }),
           });
 
